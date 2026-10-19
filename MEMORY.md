@@ -7,4 +7,6 @@
 
 ## projects/
 
-_(none yet — project folders are created on demand as memory-worthy context appears)_
+### llm-wiki
+
+- [Wiki workflow feedback](projects/llm-wiki/feedback-wiki-workflow.md) — ingest patterns, link style, scope limits for operating the wiki efficiently. Canonical copy — the Claude Code memory path for this project holds only a pointer stub.
