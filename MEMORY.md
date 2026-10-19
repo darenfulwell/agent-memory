@@ -9,7 +9,10 @@
 
 ### llm-wiki
 
-- [Wiki workflow feedback](projects/llm-wiki/feedback-wiki-workflow.md) — ingest patterns, link style, scope limits for operating the wiki efficiently. Canonical copy — the Claude Code memory path for this project holds only a pointer stub.
+- [Wiki workflow feedback](projects/llm-wiki/feedback-wiki-workflow.md) — ingest patterns, link style, scope limits for operating the wiki efficiently
+- [People page feedback](projects/llm-wiki/feedback-people-pages.md) — always enrich people pages with LinkedIn via Brave; `/details/experience/` is the key URL
+- [External artifact language](projects/llm-wiki/feedback-external-artifact-language.md) — zone/boundary vocab stays in the wiki; translate to standard networking terms for Confluence, whiteboards, SA-facing materials
+- [Wiki writing style feedback](projects/llm-wiki/feedback-wiki-writing-style.md) — land the practical implication after a structural claim, don't leave it for the reader to derive
 
 ### ipfabric-product
 
@@ -18,4 +21,8 @@
 - [Predicted snapshot pipeline](projects/ipfabric-product/project-predicted-snapshot.md) — Vinny's snapshot modifier tool closes the propagation model loop; predicted snapshot feeds IP Fabric native analysis for impact diffing
 - [IP Fabric product repo](projects/ipfabric-product/reference-ipfabric-product-repo.md) — D:\users\daren\repos\ipfabric-product; key paths for device JSON schema (writers/) and Postgres types (models/)
 
-All four are canonical here — the Claude Code memory path for the llm-wiki project holds only pointer stubs.
+### agent-harness
+
+- [Agent harness design](projects/agent-harness/project-agent-harness-design.md) — design history for this repo and the planned shared-memory repo, including the build log
+
+All project-scoped files above are canonical here — the Claude Code memory path for the llm-wiki project holds only pointer stubs.
