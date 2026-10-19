@@ -25,4 +25,4 @@
 
 - [Agent harness design](projects/agent-harness/project-agent-harness-design.md) — design history for this repo and the planned shared-memory repo, including the build log
 
-All project-scoped files above are canonical here — the Claude Code memory path for the llm-wiki project holds only pointer stubs.
+All files above (`global/` and `projects/`) are canonical here — the Claude Code memory path for the llm-wiki project holds only pointer stubs.
