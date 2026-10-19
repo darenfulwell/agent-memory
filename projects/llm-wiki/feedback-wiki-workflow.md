@@ -50,3 +50,23 @@ Keep a 2–5 page touch budget per ingest. If editing more than 5 pages for one 
 Forward links only — when creating a new page, add wikilinks *from* it to existing pages. Don't open other pages just to add reciprocal backlinks. Obsidian's backlink pane handles that natively.
 
 **Why:** Efficiency. Editing N pages to add backlinks costs N reads + N writes for zero additional user value.
+
+---
+
+See [[feedback-wiki-write-access]] for the `llm-wiki-rules` skill vs. CLAUDE.md write-access conflict and its resolution (write directly to `wiki/` in Claude Code sessions).
+
+---
+
+The `llm-wiki` repo's working directory is sometimes shared with other concurrent activity — scheduled tasks (e.g. reMarkable-note ingests) and other sessions commit and push to the same checkout independently of this session.
+
+**Why:** Observed directly: staged-but-uncommitted changes from this session were swept into an unrelated commit (`docs(sdd): document EIGRP and OMP modules...`) made by a concurrent process between this session's `git add` and `git commit` calls — the content landed correctly, but under someone else's commit message.
+
+**How to apply:** After pushing, don't assume the commit you authored is what's on `origin/main` — check `git log --oneline -3` or the reflog to confirm. If HEAD has moved further than expected, diff the target files against HEAD rather than re-committing; the content may already be there under a different message. Treat this as benign, not a sign of data loss, unless a diff actually shows missing content.
+
+---
+
+When Daren asks to "push the updated wiki," bundle whatever coherent, finished-looking content is sitting uncommitted in the working tree — not just the files touched in this session's own tool calls.
+
+**Why:** Confirmed 2026-09-16: a push request found unrelated pre-existing uncommitted edits (NSX/K8s modelling refinements in `virtual-network-extension-model.md`, a new `propagation-engine-architecture.md` page) that hadn't been made in this session. Reviewing the diffs first showed they were coherent and complete, not half-written; they were committed and pushed alongside the session's own changes with no objection.
+
+**How to apply:** Before committing on a push request, run `git status`/`git diff --stat` across the whole repo, not just the files edited this session. Skim any unexpected diffs for coherence (not half-finished, nothing that looks like broken or placeholder content) before including them. If something looks unfinished or suspicious, flag it and ask rather than silently committing it.

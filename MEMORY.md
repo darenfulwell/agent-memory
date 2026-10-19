@@ -13,13 +13,20 @@
 - [People page feedback](projects/llm-wiki/feedback-people-pages.md) — always enrich people pages with LinkedIn via Brave; `/details/experience/` is the key URL
 - [External artifact language](projects/llm-wiki/feedback-external-artifact-language.md) — zone/boundary vocab stays in the wiki; translate to standard networking terms for Confluence, whiteboards, SA-facing materials
 - [Wiki writing style feedback](projects/llm-wiki/feedback-wiki-writing-style.md) — land the practical implication after a structural claim, don't leave it for the reader to derive
+- [Conceptual page development feedback](projects/llm-wiki/feedback-conceptual-page-development.md) — let Daren iteratively restate/refine a concept across turns before drafting a full page rewrite
+- [External confidentiality feedback](projects/llm-wiki/feedback-external-confidentiality.md) — strip customer names/tickets/internal roadmap before anything leaves the wiki for an external audience
+- [Wiki write-access feedback](projects/llm-wiki/feedback-wiki-write-access.md) — in Claude Code sessions, write directly to wiki/ per CLAUDE.md; the llm-wiki-rules skill's read-only guidance doesn't apply here
+- [Wiki-context workflow feedback](projects/llm-wiki/feedback-wiki-context-workflow.md) — run `/wiki-context <topic>` at the start of coding/planning sessions to seed wiki terminology and frameworks
+- [Wiki-context skill workflow](projects/llm-wiki/feedback-wiki-context-workflow.md) — run /wiki-context <topic> before coding/requirements sessions; skill+command both needed; outputs context block + requirements questions
 
 ### ipfabric-product
 
-- [Project context](projects/ipfabric-product/project-ipfabric.md) — what IP Fabric is, key domain concepts (zones, digital twin, assurance architecture, segmentation), competitive landscape, ongoing themes
+- [Project context](projects/ipfabric-product/project-ipfabric.md) — what IP Fabric is, key domain concepts incl. AIM, competitive landscape (NetBrain/Forward AI-backend findings), ongoing themes
 - [IPF Cloud model timeline](projects/ipfabric-product/project-ipf-cloud-model.md) — Cloud zone experiment deferred to IPF 8.1 (end Aug 2026); AWS site AWS:890561831523/eu-central-1
 - [Predicted snapshot pipeline](projects/ipfabric-product/project-predicted-snapshot.md) — Vinny's snapshot modifier tool closes the propagation model loop; predicted snapshot feeds IP Fabric native analysis for impact diffing
 - [IP Fabric product repo](projects/ipfabric-product/reference-ipfabric-product-repo.md) — D:\users\daren\repos\ipfabric-product; key paths for device JSON schema (writers/) and Postgres types (models/)
+- [Continuous discovery initiative](projects/ipfabric-product/project-continuous-discovery.md) — why/architecture, NetBrain/Forward/AIM competitive positioning, live Confluence draft (PM space, page 6519455794, still unpublished)
+- [Partner enrichment reasoning feedback](projects/ipfabric-product/feedback-partner-enrichment-reasoning.md) — check for a live dependency vs. one-time transfer before calling a partner enrichment "coopetition risk"
 
 ### agent-harness
 
