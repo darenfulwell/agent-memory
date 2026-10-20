@@ -81,8 +81,11 @@ Vinny's pipeline is now fully documented (`IPF Insight Center Snapshot Mutation 
 **engine/boundaries.py**
 - `vrrp-to-vrrp` same-level co-membership suppression added (alongside existing `stp-stp` and `vxlan-vxlan`). VRRP is terminal leaf — sharing gateway devices across VRRP groups does not cause cascade.
 
+**zones/stp.py — identify_zones()**
+- Now uses union-find on the STP edge graph to produce one zone per connected component, rather than one zone per `(site_id, vlan_id)`. Frankfurt VLANs 441–444 have zero inter-switch STP edges (bridged by VXLAN, not trunks), so each switch gets its own zone: `Frankfurt-4X:stp:vlan:441:s4xsw05`, `Frankfurt-4X:stp:vlan:441:s4xsw07`, etc. Single-component zones (all Paris VLANs) keep the plain id — backward-compatible.
+
 **scripts/generate_zone_graph.py**
-- VRRP zones included in HTML force-directed graph output (light pink nodes, `stp_to_vrrp` edge type, VRRP label transform). Day 4/5 graphs: 63 zones / 172 boundaries (was 56/123).
+- VRRP zones included in HTML force-directed graph output (light pink nodes, `stp_to_vrrp` edge type, VRRP label transform). Day 4/5 graphs: 67 zones / 172 boundaries (was 63/172 after VRRP fix; was 56/123 before).
 
 **Multi-start zones:** `engine/traversal.py` `_find_starting_zones()` filters hierarchical zones so only the upstream zone starts. All 4 Paris STP VLANs start simultaneously on s1xgw1 DEVICE_DOWN.
 
