@@ -1,6 +1,6 @@
 ---
 name: project-predicted-snapshot
-description: "Vinny's snapshot modifier tool and its role in the propagation zone prediction pipeline"
+description: "Propagation engine dev state: zone model, STP/VRRP/OSPF diffs, mutation script, open gaps"
 metadata:
   type: project
 ---
@@ -43,3 +43,82 @@ Vinny's pipeline is now fully documented (`IPF Insight Center Snapshot Mutation 
 5. **The LLM front-end is a separate concern.** The mutation backend (`scenario-applier.ts`) accepts a typed `ScenarioPlan` directly. Our engine bypasses the LLM and feeds the plan layer directly — no NL translation needed.
 
 **How to apply:** When building the engine→mutation bridge, the engine's per-device diffs need to enumerate specific prefixes (from the snapshot's routing table) and specific ARP/MAC entries, not just zone membership. The snapshot fetch layer already has the routing table data; it needs to be made available to `compute_diffs()` in each zone module.
+
+---
+
+## Engine implementation state (as of 2026-10-20, commit f0b4e19)
+
+**Repo:** `D:\users\daren\repos\ipf-prediction-engine` (main branch, up to date)
+
+**Zone modules implemented:** STP, OSPF, BGP, EIGRP, OMP, VXLAN, VRRP
+
+### Current design (accumulated across sessions)
+
+**zones/stp.py — 802.1D election and MAC walk**
+- `_stp_election(exclude_device=...)`: full Dijkstra with `pred_port[v]` (v's root-port interface) and `pred_up_port[v]` (upstream's port toward v), with port-level tiebreaks for parallel links (lowest bridge_id → lowest upstream port ID → lowest local port ID). Returns 5-tuple `(root, port_roles, pred, pred_port, pred_up_port)`.
+- Port role assignment uses `pred_port.get(b) == ib` to correctly distinguish root vs alternate among parallel links connecting the same pair of switches.
+- `_compute_mac_diffs(vlan_id, pred, pred_port, pred_up_port, exclude_device, virtual_macs)`: SPT-based MAC re-learning after TC flush. Access anchors (non-ISL ports) drive the walk; VRRP virtual MACs excluded from anchors to avoid collision with the VRRP module. Uses `pred_port`/`pred_up_port` directly instead of an ambiguous `port_toward` dict.
+- `_virtual_macs` populated in `identify_zones()` from snapshot FHRP data.
+
+**zones/vrrp.py — FHRP failover + virtual MAC movement**
+- Identifies zones by (site_id, vlan_id, group_id).
+- `_compute_virtual_mac_diffs()`: `old_port` per switch read from snapshot MAC table (ground truth — avoids topology-vs-reality mismatches). `new_port` from Dijkstra from new_master (old_master excluded), using `pred_port`/`pred_up_port` with port-level tiebreaks.
+- Unconditional downed-device sweep in `mutate_snapshot.py` catches FHRP rows the zone module misses (e.g. backup rows on VLANs where no election fires).
+
+**zones/ospf.py**
+- `_boundary_routes_changed()` skips the downed device as Dijkstra destination — suppresses false route_withdrawal on redundant paths.
+
+**engine/snapshot.py**
+- `_fetch_interfaces()` fetches both `ip` (host IP) and `net` (network address) fields. `_device_ips()` in `mutate_snapshot.py` uses `ip` — not `net.split("/")[0]` — for nexthop matching.
+- `_fetch_fhrp()` uses `tables/fhrp/group-state`; derives virtual_mac from protocol+group.
+
+**mutate_snapshot.py**
+- Routing removals: (1) all rows on downed device, (2) rows on `affected_devices` whose `nexthop_ip` is in downed device's host IPs. Rule 3 (remove by connected-network prefix) dropped — wrong for redundant-gateway topologies where partner keeps advertising those prefixes.
+- `affected_devices` extracted from all zone results — routing scope is bounded to propagation zone.
+- Downed-device sweep after zone diffs: marks remaining FHRP and MAC rows on downed device as "removed" unconditionally.
+- `apply_routing_reroute_adds()`: for single-path routes removed by nexthop dependency, finds the surviving OSPF neighbour in the same area and emits an `added` row with the new nexthop IP and interface. Key design: (1) verifies alternative has a surviving *unchanged* row in post-mutation rib_rows (not pre-failure snapshot) — correctly suppresses routes to the downed device's loopbacks; (2) derives nexthop IPs via subnet matching since `neighbor.ip` is None throughout; (3) cross-device VRF match uses `(device, network)` only — Juniper `"master"` ≡ Arista/Cisco `"default"`; (4) suppresses routes whose destination subnet is exclusively the downed device's (loopbacks).
+
+**engine/boundaries.py**
+- `vrrp-to-vrrp` same-level co-membership suppression added (alongside existing `stp-stp` and `vxlan-vxlan`). VRRP is terminal leaf — sharing gateway devices across VRRP groups does not cause cascade.
+
+**scripts/generate_zone_graph.py**
+- VRRP zones included in HTML force-directed graph output (light pink nodes, `stp_to_vrrp` edge type, VRRP label transform). Day 4/5 graphs: 63 zones / 172 boundaries (was 56/123).
+
+**Multi-start zones:** `engine/traversal.py` `_find_starting_zones()` filters hierarchical zones so only the upstream zone starts. All 4 Paris STP VLANs start simultaneously on s1xgw1 DEVICE_DOWN.
+
+**Utility scripts**
+- `run_scenario.py`: fetches live snapshot, runs propagation, writes `scenario_<device>_<event>.json`
+- `mutate_snapshot.py`: applies scenario JSON → CSVs with `mut` column (unchanged/removed/added). Tables: inventory, stp_ports, fhrp, mac, rib, interfaces.
+
+**Live scenario 1.1 (s1xgw1 DEVICE_DOWN, snapshot 5ef44b70-b4ea-4246-b85f-878ef5723b41):**
+- 10 zones traversed, stop_reason=exit_empty
+- 4 STP VLANs → 4 VRRP zones + OSPF area 0.0.0.0 → OSPF area 0.0.0.1
+- VLAN 112 VRRP: no election (s1xgw2 already master — correct)
+- VLAN 114: s1xgw1 was master at priority 85 (lower than s1xgw2's 90, preemption disabled)
+
+**CSV outputs post-f0b4e19 (scenario_s1xgw1_device_down_mutated/):**
+
+| CSV | Removed | Added |
+|---|---|---|
+| inventory.csv | 1 | 0 |
+| stp_ports.csv | 24 | 0 |
+| fhrp.csv | 7 | 3 |
+| mac.csv | 30 | 42 |
+| rib.csv | 216 | 78 |
+| interfaces.csv | 14 | 0 |
+
+rib.csv adds: 77 `vpn1xfw01` routes rerouted via s1xgw2 (`10.255.1.5 / GigabitEthernet0/2`); 1 `d1xfw01` route (`10.255.1.0/30`) rerouted via `d1xr01` (which is outside the propagation zone and has a surviving path). Known limitation: the wrong alternative is sometimes chosen when a device outside the propagation zone has a stale surviving row — cost-based SPF selection not implemented.
+
+Known model limitation (accepted): `aac1.xxx` infrastructure MACs added to access switch uplink ports via STP TC re-learn walk are correct per the optimistic re-learn assumption — the walk assumes all traffic flows post-convergence.
+
+---
+
+## Known gaps / next work
+
+1. **Device removal from all tables** — systematic pre-propagation pass for ARP, BGP/OSPF neighbors, LLDP, topology edges. Inventory + interfaces covered in mutate_snapshot.py; engine doesn't produce these as DeviceDiffs yet.
+
+2. **Host MAC movement beyond VRRP virtual MAC** — regular host MACs that learned upstream via the downed device. STP `_compute_mac_diffs()` handles reconvergence (42 added rows), but relies on access-port anchors being present in snapshot MAC table.
+
+3. **Routing reroute adds: alternative selection quality** — current algorithm takes the first OSPF neighbour with a surviving row, not the lowest-cost alternative. Devices outside the propagation zone have stale surviving rows that can be incorrectly chosen. Fix: weight by OSPF path cost, or restrict alternative candidates to `affected_devices`.
+
+4. **Vinny integration** — engine diffs at zone/table level; mutation backend needs prefix-level typed operations (`remove_route`, `add_route`, `remove_mac`, etc.). Bridge layer not yet built. Engine snapshot fetch already has routing table data; needs to be made available to `compute_diffs()` per zone module.
