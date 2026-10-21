@@ -46,7 +46,7 @@ Vinny's pipeline is now fully documented (`IPF Insight Center Snapshot Mutation 
 
 ---
 
-## Engine implementation state (as of 2026-10-21, commit ebae220)
+## Engine implementation state (as of 2026-10-21, commit 30f4f95)
 
 **Repo:** `D:\users\daren\repos\ipf-prediction-engine` (main branch, up to date)
 
@@ -105,12 +105,13 @@ Vinny's pipeline is now fully documented (`IPF Insight Center Snapshot Mutation 
   - `device_down`: existing full-sweep logic (inventory + FHRP/MAC + all interfaces removed)
   - `interface_down`: device stays up; only the specific interface row removed; `apply_routing_removals_interface_down()` removes routes via that nexthop_if on the device + routes on affected devices with nexthop_ip in the downed interface's IPs; reroute adds scoped to downed interface's IPs via `downed_ips` param.
 
-**Live scenario 2.2 (d3xr01 Gi0/2 INTERFACE_DOWN, same snapshot):**
+**Live scenario 2.2 (d3xr01 Gi0/2 INTERFACE_DOWN, same snapshot) — post-30f4f95:**
 - 13 zones traversed, stop_reason=terminal_boundary (broader than expected — engine marks full OSPF zone as affected, cascades to MPLS BGP and all site BGP zones; known model limitation)
-- rib.csv: removed=102 (d3xr01:11 routes via Gi0/2, d3xfw01:91 routes via d3xr01 IP 10.1.0.98), added=90
-- d3xfw01 reconverges 90 routes via s3xgw1 Et1 (10.1.0.102) — correct OSPF alternate path
-- Missing reroute: d3xr01 loopback 10.250.0.21/32 (sole-endpoint guard fires; device is alive but guard was designed for DEVICE_DOWN)
-- d3xr01 own reroutes not generated (downed_device guard skips triggering device's removed rows)
+- rib.csv: removed=191, added=187
+  - d3xr01: 11 routes via Gi0/2 removed; 7 rerouted via d3xr02 (10.1.0.222/Gi0/3) for London subnets + reachable link subnets; 3 prefixes (d3xfw01-side link subnets) correctly unreachable — no alternative
+  - d3xfw01: 91 routes via d3xr01 IP (10.1.0.98) removed; 91 rerouted via s3xgw1 (10.1.0.102/port3) — OSPF SPF via s3xgw1→s3xgw2→d3xfw02→d3xr02→d3xr01
+  - split-horizon cleanup: 89 s3xgw1 routes via d3xfw01 (10.1.0.101) removed (loop: d3xfw01→s3xgw1, s3xgw1→d3xfw01 for same prefixes); 89 second-wave reroutes for s3xgw1 via s3xgw2
+  - d3xr01's loopback (10.250.0.21/32) also gets rerouted via d3xr02 — sole-endpoint check now bypassed for INTERFACE_DOWN (device is alive)
 - inventory/STP/FHRP/MAC: unchanged (device stays up) ✅
 
 **Live scenario 1.1 (s1xgw1 DEVICE_DOWN, snapshot 5ef44b70-b4ea-4246-b85f-878ef5723b41):**
@@ -136,14 +137,20 @@ Known model limitation (accepted): `aac1.xxx` infrastructure MACs added to acces
 
 ---
 
+**mutate_snapshot.py — INTERFACE_DOWN reroute (post-30f4f95)**
+- `reroute_downed_device=True` flag: triggering device's own removed routes (matched by `nexthop_if==downed_interface`) are now eligible for reroute adds. Sole-endpoint check bypassed when True (device is alive).
+- `downed_interface` guard in candidate selection: skip OSPF neighbors reachable only via the downed interface. Area lookup uses interface-based match when `reroute_downed_device=True`.
+- Loop-back candidate check (triggering device only): skip candidates whose surviving route for the prefix has nexthop_ip in the triggering device's own IPs — prevents d3xr01→edge3x01→d3xr01 triangle (edge3x01 was first in OSPF neighbor list and had ECMP including d3xr01).
+- `apply_split_horizon_cleanup()`: after first-wave reroutes, for each add D→via-U-IP: finds U's unchanged routes for that prefix with nexthop=D's link IP, marks removed, returns {device, network, former_nexthop_ip, former_nexthop_device} for second-wave `apply_routing_reroute_adds()`.
+
 ## Known gaps / next work
 
 1. **Device removal from all tables** — systematic pre-propagation pass for ARP, BGP/OSPF neighbors, LLDP, topology edges. Inventory + interfaces covered in mutate_snapshot.py; engine doesn't produce these as DeviceDiffs yet.
 
 2. **Host MAC movement beyond VRRP virtual MAC** — regular host MACs that learned upstream via the downed device. STP `_compute_mac_diffs()` handles reconvergence (42 added rows), but relies on access-port anchors being present in snapshot MAC table.
 
-3. **Routing reroute adds: alternative selection quality** — current algorithm takes the first OSPF neighbour with a surviving row, not the lowest-cost alternative. Devices outside the propagation zone have stale surviving rows that can be incorrectly chosen. Fix: weight by OSPF path cost, or restrict alternative candidates to `affected_devices`.
+3. **Routing reroute adds: alternative selection quality** — current algorithm takes the first OSPF neighbour with a surviving row that doesn't loop back, not lowest-cost. Devices outside the propagation zone may still be chosen if their route doesn't loop. Fix: weight by OSPF path cost, or restrict candidates to `affected_devices`.
 
-4. **INTERFACE_DOWN reroute gaps**: (a) triggering device's own routes via the downed interface are not rerouted (downed_device guard skips them, even though the device is still alive); (b) sole-endpoint check incorrectly suppresses reroutes to the triggering device's loopbacks (designed for DEVICE_DOWN where device is gone). Fix: make sole-endpoint check and downed_device skip conditional on event_type.
+4. **ARP table** — not yet modelled. When an interface goes down, ARP entries whose gateway IP is on that interface should be removed from adjacent devices. Deferred explicitly.
 
-4. **Vinny integration** — engine diffs at zone/table level; mutation backend needs prefix-level typed operations (`remove_route`, `add_route`, `remove_mac`, etc.). Bridge layer not yet built. Engine snapshot fetch already has routing table data; needs to be made available to `compute_diffs()` per zone module.
+5. **Vinny integration** — engine diffs at zone/table level; mutation backend needs prefix-level typed operations (`remove_route`, `add_route`, `remove_mac`, etc.). Bridge layer not yet built. Engine snapshot fetch already has routing table data; needs to be made available to `compute_diffs()` per zone module.
