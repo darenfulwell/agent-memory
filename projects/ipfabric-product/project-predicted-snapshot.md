@@ -46,7 +46,7 @@ Vinny's pipeline is now fully documented (`IPF Insight Center Snapshot Mutation 
 
 ---
 
-## Engine implementation state (as of 2026-10-21, commit 30f4f95)
+## Engine implementation state (as of 2026-10-21, commit f962ee6)
 
 **Repo:** `D:\users\daren\repos\ipf-prediction-engine` (main branch, up to date)
 
@@ -137,6 +137,12 @@ Known model limitation (accepted): `aac1.xxx` infrastructure MACs added to acces
 
 ---
 
+**mutate_snapshot.py — ECMP stale-nexthop cleanup + SVI peer marking (post-f962ee6)**
+- `apply_ecmp_stale_nexthop_cleanup()`: after all reroutes, removes ECMP rows where the nexthop device has no `unchanged` route for that prefix — only fires when at least one other ECMP nexthop survives. Scenario 2.2: edge3x01 loses 7 d3xr01 ECMP nexthops for London subnets (now single-path via d3xr02); s3xlbr01 loses 81 s3xgw1 ECMP nexthops (single-path via s3xgw2). Runs after all reroutes in both DEVICE_DOWN and INTERFACE_DOWN branches.
+- `_is_physical_iface()`: returns False for SVIs (Vl*/Vlan*), loopbacks, tunnels, BVI/IRB, NVE. Used in two places:
+  - `_build_peer_index()` subnet-match layer now restricted to physical interfaces — SVIs on the same IP subnet are a L3 IP relationship, not a P2P physical link; previously s1xgw1 Vl112 ↔ s1xgw2 Vl112 were being matched via subnet.
+  - `apply_iface_state_changes()` only marks peers as `changed, l1=down, l2=down` when the downed interface is physical. SVIs don't have a real L1 signal. Scenario 1.1: interface_state changed=8 (was 11) — Vl112/113/114 on s1xgw2 no longer incorrectly marked down.
+
 **mutate_snapshot.py — INTERFACE_DOWN reroute (post-30f4f95)**
 - `reroute_downed_device=True` flag: triggering device's own removed routes (matched by `nexthop_if==downed_interface`) are now eligible for reroute adds. Sole-endpoint check bypassed when True (device is alive).
 - `downed_interface` guard in candidate selection: skip OSPF neighbors reachable only via the downed interface. Area lookup uses interface-based match when `reroute_downed_device=True`.
@@ -151,6 +157,8 @@ Known model limitation (accepted): `aac1.xxx` infrastructure MACs added to acces
 
 3. **Routing reroute adds: alternative selection quality** — current algorithm takes the first OSPF neighbour with a surviving row that doesn't loop back, not lowest-cost. Devices outside the propagation zone may still be chosen if their route doesn't loop. Fix: weight by OSPF path cost, or restrict candidates to `affected_devices`.
 
-4. **ARP table** — not yet modelled. When an interface goes down, ARP entries whose gateway IP is on that interface should be removed from adjacent devices. Deferred explicitly.
+4. **SVI state via last-L2-port check** — `_is_physical_iface()` now prevents SVIs from being marked via peer lookup. Next step: when a physical interface goes down, check if it was the LAST L2 port in its VLAN on the peer switch; if so, mark the peer's SVI for that VLAN as changed/down.
 
-5. **Vinny integration** — engine diffs at zone/table level; mutation backend needs prefix-level typed operations (`remove_route`, `add_route`, `remove_mac`, etc.). Bridge layer not yet built. Engine snapshot fetch already has routing table data; needs to be made available to `compute_diffs()` per zone module.
+5. **ARP table** — not yet modelled. When an interface goes down, ARP entries whose gateway IP is on that interface should be removed from adjacent devices. Deferred explicitly.
+
+6. **Vinny integration** — engine diffs at zone/table level; mutation backend needs prefix-level typed operations (`remove_route`, `add_route`, `remove_mac`, etc.). Bridge layer not yet built. Engine snapshot fetch already has routing table data; needs to be made available to `compute_diffs()` per zone module.

@@ -27,6 +27,7 @@
 - [IP Fabric product repo](projects/ipfabric-product/reference-ipfabric-product-repo.md) — D:\users\daren\repos\ipfabric-product; key paths for device JSON schema (writers/) and Postgres types (models/)
 - [Continuous discovery initiative](projects/ipfabric-product/project-continuous-discovery.md) — why/architecture, NetBrain/Forward/AIM competitive positioning, live Confluence draft (PM space, page 6519455794, still unpublished)
 - [Partner enrichment reasoning feedback](projects/ipfabric-product/feedback-partner-enrichment-reasoning.md) — check for a live dependency vs. one-time transfer before calling a partner enrichment "coopetition risk"
+- [Interface state architecture feedback](projects/ipfabric-product/feedback-interface-state-architecture.md) — interface operational state (l1/l2) is the protocol-agnostic ground truth for mutation modelling; protocol tables (STP, OSPF adjacencies) are consequences, not the primary signal
 
 ### agent-harness
 
