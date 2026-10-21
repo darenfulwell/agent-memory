@@ -46,7 +46,7 @@ Vinny's pipeline is now fully documented (`IPF Insight Center Snapshot Mutation 
 
 ---
 
-## Engine implementation state (as of 2026-10-20, commit 2c05ff2)
+## Engine implementation state (as of 2026-10-21, commit ebae220)
 
 **Repo:** `D:\users\daren\repos\ipf-prediction-engine` (main branch, up to date)
 
@@ -80,6 +80,16 @@ Vinny's pipeline is now fully documented (`IPF Insight Center Snapshot Mutation 
 
 **engine/boundaries.py**
 - `vrrp-to-vrrp` same-level co-membership suppression added (alongside existing `stp-stp` and `vxlan-vxlan`). VRRP is terminal leaf — sharing gateway devices across VRRP groups does not cause cascade.
+
+**engine/snapshot.py — iface_state + connectivity fetchers**
+- `_fetch_iface_state()`: `tables/inventory/interfaces` → {device, interface, site_id, l1, l2}. Protocol-agnostic ground-truth for interface operational state.
+- `_fetch_connectivity()`: `tables/interfaces/connectivity-matrix` → {device, interface, peer_device, peer_interface, protocol}. Deduplication by priority: cdp(0) > lldp(1) > stp(2) > cef(3). Bidirectional fill applied. Added to `fetch_snapshot()` as `"iface_state"` and `"connectivity"` keys.
+
+**mutate_snapshot.py — interface_state.csv**
+- `_build_peer_index()`: three-layer (device, interface) → (peer_device, peer_interface) lookup: connectivity-matrix (CDP/LLDP/CEF) → STP edges → subnet match on /30+/31 P2P links. Subnet match covers routed firewall-router links where neither device speaks CDP/LLDP.
+- `apply_iface_state_changes()`: DEVICE_DOWN removes all downed-device iface_state rows + marks all discovered peers `changed, l1=down, l2=down`. INTERFACE_DOWN marks specific interface + its peer `changed, l1=down, l2=down`.
+- New `interface_state.csv` output. `_write()` now reports `changed=` count.
+- Results: scenario 2.2 changed=2 (d3xr01 Gi0/2 + d3xfw01 port2 via LLDP); scenario 1.1 removed=14 changed=11 (all physical + SVI peers of s1xgw1).
 
 **zones/stp.py — identify_zones()**
 - Now uses union-find on the STP edge graph to produce one zone per connected component, rather than one zone per `(site_id, vlan_id)`. Frankfurt VLANs 441–444 have zero inter-switch STP edges (bridged by VXLAN, not trunks), so each switch gets its own zone: `Frankfurt-4X:stp:vlan:441:s4xsw05`, `Frankfurt-4X:stp:vlan:441:s4xsw07`, etc. Single-component zones (all Paris VLANs) keep the plain id — backward-compatible.
