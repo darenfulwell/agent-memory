@@ -143,6 +143,12 @@ Known model limitation (accepted): `aac1.xxx` infrastructure MACs added to acces
   - `_build_peer_index()` subnet-match layer now restricted to physical interfaces — SVIs on the same IP subnet are a L3 IP relationship, not a P2P physical link; previously s1xgw1 Vl112 ↔ s1xgw2 Vl112 were being matched via subnet.
   - `apply_iface_state_changes()` only marks peers as `changed, l1=down, l2=down` when the downed interface is physical. SVIs don't have a real L1 signal. Scenario 1.1: interface_state changed=8 (was 11) — Vl112/113/114 on s1xgw2 no longer incorrectly marked down.
 
+**mutate_snapshot.py — isolated-destination detection + scenario 1.7 (post-8021316)**
+- `apply_routing_reroute_adds()` now accepts `isolated_devices: set[str] | None`. A device is isolated when it has zero OSPF-protocol (`protocol.startswith("O")`) unchanged rows after the removal pass — connected (C/L) and static (S) routes don't prove OSPF reachability.
+- Isolated-destination check: if all devices with interfaces on the destination subnet are either the downed device or in `isolated_devices`, the reroute is suppressed. Prevents false reroutes to loopbacks of OSPF-isolated devices (e.g. s4xsw05's 10.250.0.53/32 after s4xsw03 goes down).
+- Only computed for DEVICE_DOWN. For INTERFACE_DOWN, devices with removed routes are reconverging (their OSPF adjacencies survive on other interfaces), so isolated_devices is not passed.
+- Scenario 1.7 (s4xsw03 DEVICE_DOWN): OSPF→VXLAN traversal fires; 6 zones (OSPF area 0 + OSPF area 4 + 4 VXLAN VNIs 100441–100444); stop_reason=terminal_boundary. rib: removed=360, added=6 (link-subnet reroutes only). interface_state: removed=11, changed=4 (s4xsw01 Et2, s4xsw02 Et2, s4xsw05 Et1, s4xsw06 Et1).
+
 **mutate_snapshot.py — INTERFACE_DOWN reroute (post-30f4f95)**
 - `reroute_downed_device=True` flag: triggering device's own removed routes (matched by `nexthop_if==downed_interface`) are now eligible for reroute adds. Sole-endpoint check bypassed when True (device is alive).
 - `downed_interface` guard in candidate selection: skip OSPF neighbors reachable only via the downed interface. Area lookup uses interface-based match when `reroute_downed_device=True`.
@@ -155,7 +161,7 @@ Known model limitation (accepted): `aac1.xxx` infrastructure MACs added to acces
 
 2. **Host MAC movement beyond VRRP virtual MAC** — regular host MACs that learned upstream via the downed device. STP `_compute_mac_diffs()` handles reconvergence (42 added rows), but relies on access-port anchors being present in snapshot MAC table.
 
-3. **Routing reroute adds: alternative selection quality** — current algorithm takes the first OSPF neighbour with a surviving row that doesn't loop back, not lowest-cost. Devices outside the propagation zone may still be chosen if their route doesn't loop. Fix: weight by OSPF path cost, or restrict candidates to `affected_devices`.
+3. **Routing reroute adds: alternative selection quality** — isolated-destination suppression now prevents false reroutes to OSPF-isolated loopbacks (gap partially closed). Remaining: first OSPF neighbour with a surviving row is chosen, not lowest-cost. Devices outside the propagation zone may still be chosen if their route doesn't loop. Fix: weight by OSPF path cost, or restrict candidates to `affected_devices`.
 
 4. **SVI state via last-L2-port check** — `_is_physical_iface()` now prevents SVIs from being marked via peer lookup. Next step: when a physical interface goes down, check if it was the LAST L2 port in its VLAN on the peer switch; if so, mark the peer's SVI for that VLAN as changed/down.
 
