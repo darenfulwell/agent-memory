@@ -46,7 +46,7 @@ Vinny's pipeline is now fully documented (`IPF Insight Center Snapshot Mutation 
 
 ---
 
-## Engine implementation state (as of 2026-11-23, commit 30d1c31)
+## Engine implementation state (as of 2026-11-23, commit 7ace385)
 
 **Repo:** `D:\users\daren\repos\ipf-prediction-engine` (main branch, up to date)
 
@@ -54,9 +54,16 @@ Vinny's pipeline is now fully documented (`IPF Insight Center Snapshot Mutation 
 
 **ARP table:** fetch implemented (`engine/snapshot.py _fetch_arp()`; `columns=[]` required for IPF SDK 8.x, `proxy` bool replaces old `type` field). Mutation logic implemented (`mutate_snapshot.py apply_arp_changes()`). ARP rows written to `arp.csv` output. Closes gaps 1+5.
 
-**Scenario test baseline:** 30/30 pass on snapshot `23f5b9cd-f48c-4c3c-b694-2a24def768d0` (committed to `tests/results/`; `tests/results/summary.md` is the human-readable log the scheduled email task reads).
+**Scenario test baseline:** 30/30 pass across two snapshots:
+- `23f5b9cd` (Day 5 — 26 scenarios): demo2.eu.ipfabric.io current snapshot
+- `a52c7162` (Day 4 — 4 isolation scenarios): "Day 4 - after migration" — single-uplink VTEPs available here
 
-**Frankfurt-4X topology change (demo2 upgrade):** Site replatformed from distribution-leaf to full spine-leaf. Old `s4xswNN` (access/distribution) → `s4xlf0N` (leaf, 3 adj each to spines s4xsp01-03) + `s4xsp0N` (spine). No single-uplink VTEPs remain. This removed the most valuable class of OSPF→VXLAN isolation test scenario (single interface failure isolating a VTEP). The `device_down` path (1.6, 1.7) still exercises the full cascade; isolation-via-interface-down is no longer testable on demo2. Daren noted this topology loss is a shame — the tight OSPF adjacency constraints were good for observing underlay→overlay impact propagation.
+**Frankfurt-4X topology — two snapshots:**
+- Day 5 (`23f5b9cd`, current): full spine-leaf, every leaf has 3 OSPF adjacencies to spines. No single-uplink VTEPs remain. VXLAN isolation-via-interface-down not testable on Day 5 topology.
+- Day 4 (`a52c7162`, "after migration"): s4xlf03 (Lo0=10.250.0.53, 1 adj: Et1→s4xsp01) and s4xlf05 (Lo0=10.250.0.55, 1 adj: Et2→s4xsp02) are single-uplink VTEPs. Frankfurt area 0.0.0.0 is only between d4xr01↔d4xr02; everything else (all spines, leaves) is in area 0.0.0.4. All 5 VTEPs (s4xlf01-05) are in VXLAN VNI zones 100441-100444.
+- Scenarios 2.5, 3.5, 4.4, 8.3 use Day 4 and test genuine single-uplink VTEP isolation (OSPF→VXLAN cascade via interface_down on the sole uplink).
+
+**Traversal fix (commit 31ec93e):** The else branch (terminal zones with no outgoing boundary edges) previously did not run Phase 2 (typed-BC zone-type search), so vtep_unreachable BCs emitted by terminal OSPF zones were silently dropped — VXLAN was never entered for interface_down on a single-uplink VTEP. Fixed: Phase 2 now runs from the else branch using member-device overlap as the pivot. vtep_unreachable→VXLAN now works when OSPF is the starting zone.
 
 ### Partial C — YAML config drives Python zone behavior (2026-10-28)
 
