@@ -46,11 +46,36 @@ Vinny's pipeline is now fully documented (`IPF Insight Center Snapshot Mutation 
 
 ---
 
-## Engine implementation state (as of 2026-10-21, commit f962ee6)
+## Engine implementation state (as of 2026-11-23, commit 30d1c31)
 
 **Repo:** `D:\users\daren\repos\ipf-prediction-engine` (main branch, up to date)
 
 **Zone modules implemented:** STP, OSPF, BGP, EIGRP, OMP, VXLAN, VRRP
+
+**ARP table:** fetch implemented (`engine/snapshot.py _fetch_arp()`; `columns=[]` required for IPF SDK 8.x, `proxy` bool replaces old `type` field). Mutation logic implemented (`mutate_snapshot.py apply_arp_changes()`). ARP rows written to `arp.csv` output. Closes gaps 1+5.
+
+**Scenario test baseline:** 30/30 pass on snapshot `23f5b9cd-f48c-4c3c-b694-2a24def768d0` (committed to `tests/results/`; `tests/results/summary.md` is the human-readable log the scheduled email task reads).
+
+**Frankfurt-4X topology change (demo2 upgrade):** Site replatformed from distribution-leaf to full spine-leaf. Old `s4xswNN` (access/distribution) → `s4xlf0N` (leaf, 3 adj each to spines s4xsp01-03) + `s4xsp0N` (spine). No single-uplink VTEPs remain. This removed the most valuable class of OSPF→VXLAN isolation test scenario (single interface failure isolating a VTEP). The `device_down` path (1.6, 1.7) still exercises the full cascade; isolation-via-interface-down is no longer testable on demo2. Daren noted this topology loss is a shame — the tight OSPF adjacency constraints were good for observing underlay→overlay impact propagation.
+
+### Partial C — YAML config drives Python zone behavior (2026-10-28)
+
+All 7 zone modules now read their `zones/config/<type>.yaml` at startup (`_CONFIG = yaml.safe_load(...)`). Each module sets `self._config = _CONFIG` in `__init__`. Four concrete helpers on `ZoneModule` base class consume this config:
+
+- **`tier_for_event(event_type)`** — returns per-event `ConfidenceTier` from `convergence_rules.<event>.tier`; falls back to zone-level `confidence.tier`.
+- **`known_gaps_for_event(event_type)`** — returns `convergence_rules.<event>.known_gaps` list.
+- **`zone_assumptions()`** — returns top-level `assumptions` list.
+- **`allowed_change_types_for_event(event_type)`** — returns set of permitted `change_type` strings from `convergence_rules.<event>.exits_to`; `None` if exits_to absent (no restriction); empty set if exits_to present but empty.
+
+**`exit()` wrapper pattern:** each module's original `exit()` body is renamed to `_exit_inner()`. The base class `exit()` calls `_exit_inner()` then applies the exits_to filter — `BoundaryChange` objects whose `change_type` is not in the allowed set are silently dropped. VRRP is terminal (returns `[]`) and doesn't use the wrapper.
+
+**`ZoneResult` additions:** `known_gaps: list[str]` and `assumptions: list[str]` now populated from helpers in `engine/traversal.py`. Traversal still uses `tier_for_event()` for `confidence_tier`.
+
+### Zone behavior YAML v2 (2026-10-28)
+
+All 7 config YAMLs updated with `redundancy`, `convergence_rules` (per-event: tier, steps, exits_to, known_gaps), and `changelog`. This makes the YAML the **single source of truth for zone behavior rules** — readable by Python engine, LLM (MCP), and humans. Two update channels: user corrections and empirical comparison (predicted vs actual).
+
+**Key fix from baseline run:** `bgp.yaml` `interface_down.exits_to` was missing `omp_transport_disrupted`. The exits_to filter silently dropped it, breaking scenarios 2.3 and 8.1 (OMP zone never entered). Fixed by adding the entry. Root cause was a gap between the YAML spec and what `_exit_inner()` could actually emit — the exits_to list must include every `change_type` the Python code can produce.
 
 ### Current design (accumulated across sessions)
 
@@ -155,9 +180,66 @@ Known model limitation (accepted): `aac1.xxx` infrastructure MACs added to acces
 - Loop-back candidate check (triggering device only): skip candidates whose surviving route for the prefix has nexthop_ip in the triggering device's own IPs — prevents d3xr01→edge3x01→d3xr01 triangle (edge3x01 was first in OSPF neighbor list and had ECMP including d3xr01).
 - `apply_split_horizon_cleanup()`: after first-wave reroutes, for each add D→via-U-IP: finds U's unchanged routes for that prefix with nexthop=D's link IP, marks removed, returns {device, network, former_nexthop_ip, former_nexthop_device} for second-wave `apply_routing_reroute_adds()`.
 
+**mutate_snapshot.py — OSPF/BGP neighbor CSVs + EVPN MAC withdrawal (post-9d56d4e, 2026-10-22)**
+
+- **zones/ospf.py `compute_scope()`**: now filters adjacency matches by `zone.member_devices` to prevent cross-site area ID collisions (London, Paris, Prague all have area "0.0.0.0" — without this filter, London's OSPF zone incorrectly pulled in Paris/Prague devices).
+- **zones/bgp.py `entry()`**: `_withdrawn_routes` and `_last_trigger` reset at start of each zone visit — prevents state bleed when multiple zones are visited in sequence.
+- **scripts/generate_propagation_graph.py**: pre-filter excludes zones with no `boundary_changes_out` AND no affected devices in the CSV device-changes set. Suppresses zero-signal stop zones from the HTML graph.
+- **New CSV outputs**: `ospf_neighbors.csv` (bidirectional adjacency removal — both sides of each OSPF peering removed when a device/interface goes down) and `bgp_neighbors.csv`.
+- **BGP neighbor state model**:
+  - `device == downed_device` rows → `mut=removed` (gone with the device)
+  - `neighbor == downed_device` rows on surviving devices → `mut=changed, state=Active` (still configured, peer unreachable — session retries)
+  - Sessions where the route to `neighbor_ip/32` is fully removed → `mut=changed, state=Active`
+  - When `all_ibgp_down` on a device: all BGP-protocol routes + tenant VRF C/S/L routes removed from that device
+- **EVPN MAC withdrawal — two directions**:
+  1. Surviving leaves lose VTEP MACs from isolated device: `_match_mac_remove` now only checks interface when the diff row specifies one (VXLAN zone diffs carry no interface field, so the previous strict match silently blocked all removals)
+  2. Isolated device loses EVPN MACs from remote VTEPs: when `all_ibgp_down`, all MAC rows with non-empty `vxlans` on that device are removed (implemented in `apply_bgp_session_changes()`, takes optional `mac_rows` param)
+
+**Scenario 1.7 current output (s4xsw03 DEVICE_DOWN, commit 9d56d4e):**
+- mac.csv: removed=32 (28 EVPN from s4xsw05 VTEP on surviving leaves + 4 EVPN from s4xsw07 VTEP on isolated s4xsw05)
+- bgp_neighbors.csv: removed=6 (s4xsw03's own rows), changed=14 (Active — all peers to s4xsw03, plus s4xsw05's sessions)
+
+## Conceptual model refinements — October 2026
+
+### Three-tier fidelity (precise definitions, from Oct 28 review with Miguel Pinto)
+
+| Tier | Definition | Examples in engine |
+|---|---|---|
+| Approximation | Graph reachability + redundancy detection. No protocol mechanics. Answers: "≥1 paths? What's primary? Does backup activate?" | Current VRRP, OMP, BGP boundary approximations |
+| Simulation | Mathematical end-state computed globally (birds-eye). Protocol mechanics computed once across whole zone, not per-node. | Dijkstra (OSPF), STP election — hackathon STP work also fits here |
+| Emulation | Virtual nodes running actual control plane code, generating state organically. | ContainerLab (planned as external zone process hook already in engine) |
+
+### Approximation tier — baseline question for every zone
+
+"Can the destination host/subnet be reached via ≥1 paths? What selects the primary path? When primary breaks, does backup activate?" Implementable from propagation graph + snapshot tables without protocol mechanics.
+
+### Simulation goals framework
+
+Each scenario needs explicit goals alongside the propagation model:
+- **redundancy_check**: list of critical elements — does this change eliminate any backup path?
+- **path_lookups**: src→dst pairs — run IP Fabric native path lookup on predicted snapshot, compare to pre-change result.
+
+Path lookup goal requires Vinny's snapshot mutation → IPF native path lookup (the end-to-end chain for December demo).
+
+### Zone behavior as refinable encoded rules (training loop)
+
+**Current:** propagation rules are hardcoded in Python zone modules.
+
+**Target:** `zone_behaviors/<zone-type>.yaml` files read by Python executor. Two update channels:
+1. User correction ("this doesn't quite work like that — do this instead")
+2. Empirical feedback (compare predicted vs actual after real lab change)
+
+LLM (MCP server layer already built) uses the YAML as its context for on-the-fly inference. As YAML refines, LLM improves without retraining. **Planned refactor:** extract zone behaviors into YAML, validate against the 5 worked scenarios, then run remaining catalog through YAML-driven approach.
+
+### LLM fine-tuning — longer-term research direction (Miguel Pinto, Oct 28)
+
+Fine-tune on (before snapshot, change description, after snapshot) triples. Pre/post snapshots from lab validation are also training data. Path lookup is itself a propagation model (data plane), so eventually the full stack collapses into one trained model. **Why:** Miguel — "the LLM can be educated on every single protocol — any change, propagation model built on the fly."
+
+---
+
 ## Known gaps / next work
 
-1. **Device removal from all tables** — systematic pre-propagation pass for ARP, BGP/OSPF neighbors, LLDP, topology edges. Inventory + interfaces covered in mutate_snapshot.py; engine doesn't produce these as DeviceDiffs yet.
+1. **Device removal from all tables** — ARP, LLDP/CDP neighbors, topology edges not yet in CSV output. Inventory, interfaces, interface_state, OSPF neighbors, BGP neighbors now covered.
 
 2. **Host MAC movement beyond VRRP virtual MAC** — regular host MACs that learned upstream via the downed device. STP `_compute_mac_diffs()` handles reconvergence (42 added rows), but relies on access-port anchors being present in snapshot MAC table.
 
@@ -165,6 +247,6 @@ Known model limitation (accepted): `aac1.xxx` infrastructure MACs added to acces
 
 4. **SVI state via last-L2-port check** — `_is_physical_iface()` now prevents SVIs from being marked via peer lookup. Next step: when a physical interface goes down, check if it was the LAST L2 port in its VLAN on the peer switch; if so, mark the peer's SVI for that VLAN as changed/down.
 
-5. **ARP table** — not yet modelled. When an interface goes down, ARP entries whose gateway IP is on that interface should be removed from adjacent devices. Deferred explicitly.
+5. **ARP table** — fetch and mutation implemented (2026-11-23). `_fetch_arp()` uses `columns=[]`; `apply_arp_changes()` removes own-device entries and adjacent entries where IP matches downed device/interface IPs. Output: `arp.csv`. Not yet scenario-tested (no ARP assertions in current catalog).
 
-6. **Vinny integration** — engine diffs at zone/table level; mutation backend needs prefix-level typed operations (`remove_route`, `add_route`, `remove_mac`, etc.). Bridge layer not yet built. Engine snapshot fetch already has routing table data; needs to be made available to `compute_diffs()` per zone module.
+6. **Vinny integration** — engine diffs at zone/table level; mutation backend needs prefix-level typed operations (`remove_route`, `add_route`, `remove_mac`, `remove_arp`, etc.). Bridge layer not yet built. Engine snapshot fetch already has routing table data; needs to be made available to `compute_diffs()` per zone module. Vinny is building a JSON input hook so the engine can feed a typed plan directly to his tool, bypassing the LLM/NL layer. Spec PDF: https://ipfabric.sharepoint.com/:b:/s/solutionarchitecture/IQDY4SfiQ2C1R5BMUA4BbCyrAZbaWnTNNYFZV8B-MgkePjM?e=sadg98 (SharePoint — read via Chrome MCP). **Agreed priority (2026-11-23):** ARP first (closes gaps 1+5), then Vinny bridge (gap 6 — ARP removal already in plan), then reroute quality (gap 3).
