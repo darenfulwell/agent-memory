@@ -5,7 +5,7 @@
 - [User profile](global/user-profile.md) — Daren Fulwell, Field CTO at IP Fabric, interests and working style
 - [Community references](global/reference-communities.md) — NAF Slack, AutoCon, Packet Pushers, Network to Code
 - [Quiz short answers before writing](global/feedback-quiz-short-answers.md) — don't elaborate/infer detail into memory or wiki from a compressed answer; ask first
-- [Career history](global/user-career-history.md) — career timeline (IP Fabric roles, #init6, ANS Group, BT iNet), education, and 8 technical certifications (CCIE #20443, CCDE 20150041, AWS/Azure/DevNet), sourced from LinkedIn 2026-11-27
+- [Career history](global/user-career-history.md) — full career timeline 2000–present (HBOS, BT, VocaLink, Barclays, BT iNet, ANS Group, MAG, IP Fabric roles, #init6), education, and 8 technical certifications (CCIE #20443, CCDE 20150041, AWS/Azure/DevNet), sourced from LinkedIn 2026-11-27
 
 ## projects/
 
