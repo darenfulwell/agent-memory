@@ -21,6 +21,8 @@ Daren Fulwell (daren.fulwell@ipfabric.ai) is Field CTO at IP Fabric — a networ
 - Prefers terse, direct responses — no trailing summaries, no over-explanation
 - Reads and writes Obsidian-flavored markdown fluently; understands wikilinks, callouts, frontmatter
 
+**Role context:** see llm-wiki: `tech-and-product-strategy/field-cto-role.md` for external research on how the Field CTO title is practiced elsewhere in the industry (Datadog, Cato Networks, HPE Aruba, Cisco, Claroty, Qlik) — four consistent threads (pre-sales technical authority, product feedback loop, evangelism, influence without org authority), useful as a comparison frame for Daren's own version of the role.
+
 **Domain vocabulary to use without explanation:**
 - BGP, OSPF, IS-IS, STP, EVPN, VxLAN, ACL, NAT, RIB/FIB, ARP/MAC, L2/L3
 - Digital twin, forwarding plane, control plane, data plane
