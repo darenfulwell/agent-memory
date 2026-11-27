@@ -5,7 +5,7 @@ metadata:
   type: user
 ---
 
-Daren Fulwell (daren.fulwell@ipfabric.io) is Field CTO at IP Fabric — a network intelligence / digital twin company. Deep networking domain knowledge (protocols, architecture, enterprise network operations) — part of the **#init6** community of ex-CCIE Advisory Council practitioners (colleagues include Rick Bauer, Derek Winchester, John Gibbs, Abdel-Moniem Rezk). They interviewed Vint Cerf for #init6: *"Are You Ready for the Future of the Internet?"* (https://youtu.be/ndsonJVAhDA). Interested in the intersection of AI/LLMs with network operations and infrastructure management.
+Daren Fulwell (daren.fulwell@ipfabric.io) is Field CTO at IP Fabric — a network intelligence / digital twin company. Previously held the title Chief Evangelist at IP Fabric; the marketing-messaging side of his current role (PR bylines, webinars, blog posts, working with Product Marketing on positioning) traces directly from that. Deep networking domain knowledge (protocols, architecture, enterprise network operations) — part of the **#init6** community of ex-CCIE Advisory Council practitioners (colleagues include Rick Bauer, Derek Winchester, John Gibbs, Abdel-Moniem Rezk). They interviewed Vint Cerf for #init6: *"Are You Ready for the Future of the Internet?"* (https://youtu.be/ndsonJVAhDA). Interested in the intersection of AI/LLMs with network operations and infrastructure management.
 
 **Interests:**
 - Networks & systems: protocols, distributed systems, network assurance, digital twins, change prediction
@@ -22,7 +22,7 @@ Daren Fulwell (daren.fulwell@ipfabric.io) is Field CTO at IP Fabric — a networ
 - Prefers terse, direct responses — no trailing summaries, no over-explanation
 - Reads and writes Obsidian-flavored markdown fluently; understands wikilinks, callouts, frontmatter
 
-**Role context:** see llm-wiki: `tech-and-product-strategy/field-cto-role.md` for external research on how the Field CTO title is practiced elsewhere in the industry (Datadog, Cato Networks, HPE Aruba, Cisco, Claroty, Qlik) — four consistent threads (pre-sales technical authority, product feedback loop, evangelism, influence without org authority). Daren's own role fits closely with all four; the two real divergences are sales enablement and marketing messaging (not prominent in the external pattern), plus minimizing travel by personal preference.
+**Role context:** see llm-wiki: `tech-and-product-strategy/field-cto-role.md` for external research on how the Field CTO title is practiced elsewhere in the industry (Datadog, Cato Networks, HPE Aruba, Cisco, Claroty, Qlik) — four consistent threads (pre-sales technical authority, product feedback loop, evangelism, influence without org authority). Daren's own role fits closely with all four; the two real divergences (sales enablement, marketing messaging) plus the personal preference to minimize travel are detailed on the wiki page itself — don't re-derive or guess at the specifics here, read the page.
 
 **Domain vocabulary to use without explanation:**
 - BGP, OSPF, IS-IS, STP, EVPN, VxLAN, ACL, NAT, RIB/FIB, ARP/MAC, L2/L3
