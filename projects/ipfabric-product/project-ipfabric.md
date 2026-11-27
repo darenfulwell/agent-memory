@@ -30,6 +30,10 @@ IP Fabric is a network intelligence / network digital twin platform. Core capabi
 - **NetBox / Nautobot / Infrahub** — Source of Truth platforms; complementary, not competing (document intent rather than operational state).
 - **Stablenet / Statseeker** — flagged to research; minimal detail currently.
 
+**Partner / ecosystem (not competitive):**
+
+- **Cisco Cloud Control** — Cisco's unified agentic AI ops platform (AgenticOps, "Agentic Loop": sense→diagnose→remediate→validate→deploy). Initially flagged by a single customer as a possible competitor; Daren clarified (2026-11-20) this is a partner integration point, not competition — Cloud Control added MCP support specifically so its network agents can reach outside Cisco's own portfolio for multi-vendor ground truth, which is exactly what IP Fabric provides. See llm-wiki: cisco-cloud-control.
+
 ---
 
 **Ongoing themes in the wiki (as of October 2026):**
@@ -38,3 +42,4 @@ IP Fabric is a network intelligence / network digital twin platform. Core capabi
 - Two framings added directly by Daren to application-infrastructure-mapping.md, flagged as sharpening the webinar: networks as "fossilised business intent" (change records capture the what, not the why; AIM reconstructs intent from dependency structure) and "AIM as the ontology layer for LLM-driven intent" (AIM is what stops an AI agent from guessing about your network — closes the semantic grounding gap that causes hallucination, the NAF community's documented production blocker for AI in NetOps).
 - Propagation zone model and prediction capability — mature, ongoing refinement (control-plane convergence engine work, directed discovery, causation recording). See llm-wiki: propagation-zones, propagation-engine-architecture, continuous-discovery.
 - Network assurance architecture reframed: AIM completes the SHOULD BE side at the terminal-intent tier, not just infrastructure-config. See llm-wiki: network-assurance-architecture.
+- **Solution-architecture team raised a live AIM gap** (Vitek + Lauren, Slack #solution-architecture, Nov 2026): how to position AIM to customers with no APM/microsegmentation to ingest from. Daren's response seeded a consultative-services angle (help network teams articulate/record their own network purpose) alongside a technical one (LLM reasoning over design docs/change plans + DNS/security-policy/LB naming as a weaker inference channel). See llm-wiki: future-ideas item 14, application-infrastructure-mapping. **Status: Daren emailed GTM leadership 2026-11-23** proposing this as a services/GTM question ("is there an offering here, and who owns shaping it") rather than a product fix — awaiting response as of that date.

@@ -2,7 +2,7 @@
 
 ## global/
 
-- [User profile](global/user-profile.md) — Daren Fulwell, PM at IP Fabric, interests and working style
+- [User profile](global/user-profile.md) — Daren Fulwell, Field CTO at IP Fabric, interests and working style
 - [Community references](global/reference-communities.md) — NAF Slack, AutoCon, Packet Pushers, Network to Code
 
 ## projects/
@@ -18,6 +18,8 @@
 - [Wiki write-access feedback](projects/llm-wiki/feedback-wiki-write-access.md) — in Claude Code sessions, write directly to wiki/ per CLAUDE.md; the llm-wiki-rules skill's read-only guidance doesn't apply here
 - [Wiki-context workflow feedback](projects/llm-wiki/feedback-wiki-context-workflow.md) — run `/wiki-context <topic>` at the start of coding/planning sessions to seed wiki terminology and frameworks
 - [Wiki-context skill workflow](projects/llm-wiki/feedback-wiki-context-workflow.md) — run /wiki-context <topic> before coding/requirements sessions; skill+command both needed; outputs context block + requirements questions
+- [Wiki content ownership](projects/llm-wiki/feedback-wiki-content-ownership.md) — wiki = Daren's personal strategic thinking, not official IP Fabric positions; frame accordingly when citing; only treat as confirmed when explicitly stated
+- [Podcast-watch transcript fetching](projects/llm-wiki/project-podcast-watch-transcripts.md) — iTunes Lookup API + spoken.md episode ID trick; why full transcripts can't be automated unattended; browser-download workflow for on-demand pulls
 
 ### ipfabric-product
 
