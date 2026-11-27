@@ -5,7 +5,7 @@ metadata:
   type: user
 ---
 
-Daren Fulwell (daren.fulwell@ipfabric.ai) is a Product Manager at IP Fabric — a network intelligence / digital twin company. Deep networking domain knowledge (protocols, architecture, enterprise network operations) — part of the **#init6** community of ex-CCIE Advisory Council practitioners (colleagues include Rick Bauer, Derek Winchester, John Gibbs, Abdel-Moniem Rezk). They interviewed Vint Cerf for #init6: *"Are You Ready for the Future of the Internet?"* (https://youtu.be/ndsonJVAhDA). Interested in the intersection of AI/LLMs with network operations and infrastructure management.
+Daren Fulwell (daren.fulwell@ipfabric.ai) is Field CTO at IP Fabric — a network intelligence / digital twin company. Deep networking domain knowledge (protocols, architecture, enterprise network operations) — part of the **#init6** community of ex-CCIE Advisory Council practitioners (colleagues include Rick Bauer, Derek Winchester, John Gibbs, Abdel-Moniem Rezk). They interviewed Vint Cerf for #init6: *"Are You Ready for the Future of the Internet?"* (https://youtu.be/ndsonJVAhDA). Interested in the intersection of AI/LLMs with network operations and infrastructure management.
 
 **Interests:**
 - Networks & systems: protocols, distributed systems, network assurance, digital twins, change prediction
@@ -26,4 +26,4 @@ Daren Fulwell (daren.fulwell@ipfabric.ai) is a Product Manager at IP Fabric — 
 - Digital twin, forwarding plane, control plane, data plane
 - HSA (Header Space Analysis), NQE
 - IP Fabric product: snapshots, intent checks, path lookup, network discovery
-- Propagation zones, policy zones, L3 reachability zones (IP Fabric concepts)
+- Propagation zones, policy zones, L3 reachability zones (personal concepts)
