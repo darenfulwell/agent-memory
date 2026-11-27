@@ -4,6 +4,7 @@
 
 - [User profile](global/user-profile.md) — Daren Fulwell, Field CTO at IP Fabric, interests and working style
 - [Community references](global/reference-communities.md) — NAF Slack, AutoCon, Packet Pushers, Network to Code
+- [Quiz short answers before writing](global/feedback-quiz-short-answers.md) — don't elaborate/infer detail into memory or wiki from a compressed answer; ask first
 
 ## projects/
 
