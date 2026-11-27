@@ -5,7 +5,7 @@ metadata:
   type: user
 ---
 
-Daren Fulwell (daren.fulwell@ipfabric.ai) is Field CTO at IP Fabric — a network intelligence / digital twin company. Deep networking domain knowledge (protocols, architecture, enterprise network operations) — part of the **#init6** community of ex-CCIE Advisory Council practitioners (colleagues include Rick Bauer, Derek Winchester, John Gibbs, Abdel-Moniem Rezk). They interviewed Vint Cerf for #init6: *"Are You Ready for the Future of the Internet?"* (https://youtu.be/ndsonJVAhDA). Interested in the intersection of AI/LLMs with network operations and infrastructure management.
+Daren Fulwell (daren.fulwell@ipfabric.io) is Field CTO at IP Fabric — a network intelligence / digital twin company. Deep networking domain knowledge (protocols, architecture, enterprise network operations) — part of the **#init6** community of ex-CCIE Advisory Council practitioners (colleagues include Rick Bauer, Derek Winchester, John Gibbs, Abdel-Moniem Rezk). They interviewed Vint Cerf for #init6: *"Are You Ready for the Future of the Internet?"* (https://youtu.be/ndsonJVAhDA). Interested in the intersection of AI/LLMs with network operations and infrastructure management.
 
 **Interests:**
 - Networks & systems: protocols, distributed systems, network assurance, digital twins, change prediction
@@ -16,12 +16,13 @@ Daren Fulwell (daren.fulwell@ipfabric.ai) is Field CTO at IP Fabric — a networ
 - Ancient history and archaeology
 
 **Working style:**
+- Prefers to minimize travel — a deliberate divergence from the near-universal heavy-travel norm for Field CTO roles elsewhere in the industry
 - Generates ideas and writes content regularly; uses Confluence as a writing surface for internal docs
 - Uses Claude to research, draft, and upload to Confluence — then drops a note for later sync back into personal knowledge systems
 - Prefers terse, direct responses — no trailing summaries, no over-explanation
 - Reads and writes Obsidian-flavored markdown fluently; understands wikilinks, callouts, frontmatter
 
-**Role context:** see llm-wiki: `tech-and-product-strategy/field-cto-role.md` for external research on how the Field CTO title is practiced elsewhere in the industry (Datadog, Cato Networks, HPE Aruba, Cisco, Claroty, Qlik) — four consistent threads (pre-sales technical authority, product feedback loop, evangelism, influence without org authority), useful as a comparison frame for Daren's own version of the role.
+**Role context:** see llm-wiki: `tech-and-product-strategy/field-cto-role.md` for external research on how the Field CTO title is practiced elsewhere in the industry (Datadog, Cato Networks, HPE Aruba, Cisco, Claroty, Qlik) — four consistent threads (pre-sales technical authority, product feedback loop, evangelism, influence without org authority). Daren's own role fits closely with all four; the two real divergences are sales enablement and marketing messaging (not prominent in the external pattern), plus minimizing travel by personal preference.
 
 **Domain vocabulary to use without explanation:**
 - BGP, OSPF, IS-IS, STP, EVPN, VxLAN, ACL, NAT, RIB/FIB, ARP/MAC, L2/L3
